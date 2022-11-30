@@ -3,7 +3,9 @@ const puppeteerExtra = require('puppeteer-extra')
 const stealthPlugin = require('puppeteer-extra-plugin-stealth')
 const puppeteer = require('puppeteer')
 const cheerio = require('cheerio')
-const linkEmail = require('../db/linkEmail')
+
+
+
 
 module.exports = class automation {
 
@@ -28,10 +30,32 @@ module.exports = class automation {
         await page.click('#login-signin');
         await page.waitForTimeout(4500);
 
-        for (let i = 0; i < linkEmail.length; i++) {
+
+
+        for (let i = 0; i < 7000; i++) {
             
-            page.click(linkEmail[i])
+            // Icio de verificação se a pagina possue e-mail
+            const pageData1 = await page.evaluate(() => {
+                return {
+                    html: document.documentElement.innerHTML
+                }
+            })
+    
+            const $1 = cheerio.load(pageData1.html)
+    
+            const emailClick = ($1('#mail-app-component > div > div > div > div.D_F.ab_FT.em_N.ek_BB.iz_A.H_6D6F > div > div > div.W_6D6F.H_6D6F.cZ1RN91d_n.o_h.p_R.em_N.D_F > div > div.p_R.Z_0.iy_h.iz_A.W_6D6F.H_6D6F.k_w.em_N.c22hqzz_GN > ul > li:nth-child(3)')).text()
+             
+            console.log(emailClick.length)
+    
+            if (emailClick.length == 0 ) {
+                return res.status(200).json( { message: 'Acabou a leitura' } )
+            }
+            // Final da verificação
+
             
+            page.click('#mail-app-component > div > div > div > div.D_F.ab_FT.em_N.ek_BB.iz_A.H_6D6F > div > div > div.W_6D6F.H_6D6F.cZ1RN91d_n.o_h.p_R.em_N.D_F > div > div.p_R.Z_0.iy_h.iz_A.W_6D6F.H_6D6F.k_w.em_N.c22hqzz_GN > ul > li:nth-child(3)')
+            
+
             await page.waitForTimeout(3500);
     
             const pageData = await page.evaluate(() => {
@@ -41,27 +65,34 @@ module.exports = class automation {
             })
 
             const $ = cheerio.load(pageData.html)
-    
-            const stringEmail = ($('#mail-app-component > div > div > div.iz_A.I_ZkbNhI.em_0.Z_0 > div:nth-child(2) > ul > li:nth-child(1) > div > div:nth-child(2) > div.I_ZkbNhI.D_FY.W_6D6F')).text()
+
+            const stringEmail = ($('#mail-app-component > div > div > div.iz_A.I_ZkbNhI.em_0.Z_0 > div:nth-child(2) > ul')).text()
             const data = ($('#mail-app-component > div > div > div.iz_A.I_ZkbNhI.em_0.Z_0 > div:nth-child(2) > ul > li > div > div:nth-child(1) > header > div.D_F.en_0.M_3gJOe.A_6Eb4.C_Z1VRqsb > span')).text()
             const quemEnviou = ($('#mail-app-component > div > div > div.iz_A.I_ZkbNhI.em_0.Z_0 > div:nth-child(2) > ul > li > div > div:nth-child(1) > header > div.o_h.D_F.em_0.E_fq7.ek_BB > div.D_F.en_0 > span > span > span')).text()
     
-    
-            const emailModel = new botModels({
-                stringEmail,
-                data,
-                quemEnviou,
-            })
-            try {
-                emailModel.save()
-            } catch (error) {
-                res.status(500).json( { message: error } )
-                return
+            if(stringEmail.length > 0) {
+                const emailModel = new botModels({
+                    stringEmail,
+                    data,
+                    quemEnviou,
+                })
+                try {
+                    emailModel.save()
+                } catch (error) {
+                    res.status(500).json( { message: error } )
+                    return
+                }
+                await page.waitForTimeout(2500);
+
+                await page.click('#mail-app-component > div > div > div.ab_C.k_w.D_F.H_7bcz.en_0.P_2bJhi.p_R.m_Z14vXdP.I_ZkbNhI.gl_FM > div.D_F.em_N.gl_C > ul > li:nth-child(1) > div > button')
+ 
+                await page.waitForTimeout(2500);
             }
-    
-            await page.click('#app > div.I_ZnwrMC.D_F.em_N.o_h.W_6D6F.H_6D6F > div > div.a_3rehn.W_3o4BO.s_3o4BO.cZ10Gnkk_d5Y.D_F.ek_BB.em_0 > nav > div > div.Y_fq7.P_Z1jXKuU.D_B.iz_A.iy_h.it_68UO > div.folder-list.p_R.k_w.W_6D6F.U_3mS2U > ul > li:nth-child(1)')
-            
-            await page.waitForTimeout(3500);
+            else {
+                await page.click('#mail-app-component > div > div > div.ab_C.k_w.D_F.H_7bcz.en_0.P_2bJhi.p_R.m_Z14vXdP.I_ZkbNhI.gl_FM > div.D_F.em_N.gl_C > ul > li:nth-child(1) > div > button')
+                
+                await page.waitForTimeout(3500);
+            }
         }
 
         return res.status(200).json( { message: 'Cadastro realizado com sucesso!' } )
